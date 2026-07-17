@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Nhật Ký Cảm Xúc</string>
+    <string name="camera_permission">Camera access is needed to capture your moments</string>
+    <string name="notification_permission">Notifications help you remember to write daily</string>
+</resources>

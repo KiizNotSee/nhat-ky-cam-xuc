@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="canvas">#F4F1FA</color>
+    <color name="canvas_dark">#1c1b2e</color>
+    <color name="accent">#7C3AED</color>
+    <color name="accent_light">#A78BFA</color>
+    <color name="fg">#332F3A</color>
+    <color name="fg_dark">#efecf1</color>
+    <color name="muted">#635F69</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
+    <color name="surface">#F4F1FA</color>
+    <color name="background">#e8e4f2</color>
+    <color name="status_bar">#3D2E7C</color>
+    <color name="status_bar_dark">#0D0D1A</color>
+    <color name="nav_bar">#F4F1FA</color>
+    <color name="nav_bar_dark">#1c1b2e</color>
+</resources>

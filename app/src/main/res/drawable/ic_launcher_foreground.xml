@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Circle background -->
+    <path
+        android:fillColor="#7C3AED"
+        android:pathData="M54,54m-40,0a40,40 0,1 1,80 0a40,40 0,1 1,-80 0" />
+    <!-- Journal icon -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M36,33h24a4,4 0,0 1,4 4v30a4,4 0,0 1,-4 4H36a4,4 0,0 1,-4 -4V37a4,4 0,0 1,4 -4z" />
+    <path
+        android:fillColor="#7C3AED"
+        android:pathData="M40,40h16v2H40zM40,45h12v2H40zM40,50h14v2H40zM40,55h10v2H40z"
+        android:strokeWidth="0" />
+</vector>

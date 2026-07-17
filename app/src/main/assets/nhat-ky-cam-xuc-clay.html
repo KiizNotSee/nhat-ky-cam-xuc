@@ -1,0 +1,1579 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Nhật Ký Cảm Xúc</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root{
+    --canvas:#F4F1FA;
+    --fg:#332F3A;
+    --muted:#635F69;
+    --accent:#7C3AED;
+    --accent-light:#A78BFA;
+    --accent2:#DB2777;
+    --tertiary:#0EA5E9;
+    --success:#10B981;
+    --warning:#F59E0B;
+    --card-bg:rgba(255,255,255,0.7);
+    --shadow-1:rgba(160,150,180,0.2);
+    --shadow-2:rgba(255,255,255,0.9);
+    --inset-bg:#EFEBF5;
+    --inset-shadow:#d9d4e3;
+    --skeleton:#e0dce8;
+    --overlay:rgba(51,47,58,0.5);
+  }
+  [data-theme=dark]{
+    --canvas:#1c1b2e;
+    --fg:#efecf1;
+    --muted:#9a96a3;
+    --card-bg:rgba(35,33,52,0.8);
+    --shadow-1:rgba(0,0,0,0.35);
+    --shadow-2:rgba(50,47,80,0.3);
+    --inset-bg:#252339;
+    --inset-shadow:#151324;
+    --skeleton:#2f2c47;
+    --overlay:rgba(0,0,0,0.7);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'DM Sans',sans-serif;
+    background:#e8e4f2;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:100vh;
+    overflow:hidden;
+  }
+  .heading{font-family:'Nunito',sans-serif;}
+
+  @keyframes clay-blob{
+    0%,100%{transform:translateY(0) rotate(0deg);}
+    50%{transform:translateY(-20px) rotate(2deg);}
+  }
+  @keyframes clay-blob-alt{
+    0%,100%{transform:translateY(0) rotate(0deg);}
+    50%{transform:translateY(-15px) rotate(-2deg);}
+  }
+  @keyframes fadeIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes slideUp{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}
+  @media (prefers-reduced-motion: reduce){
+    .blob, .breathe, .screen, .toast{animation:none !important;}
+  }
+
+  .phone{
+    width:100%;
+    max-width:390px;
+    height:100vh;
+    max-height:844px;
+    background:var(--canvas);
+    border-radius:48px;
+    box-shadow:30px 30px 60px #cdc6d9, -30px -30px 60px #ffffff;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    position:relative;
+  }
+  .blob-layer{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;}
+  .blob{position:absolute;border-radius:50%;filter:blur(50px);transition:background 0.4s;}
+  .blob1{width:220px;height:220px;background:#8B5CF6;opacity:0.15;top:-60px;left:-60px;animation:clay-blob 8s ease-in-out infinite;}
+  .blob2{width:180px;height:180px;background:#EC4899;opacity:0.13;top:200px;right:-70px;animation:clay-blob-alt 10s ease-in-out infinite;}
+  .blob3{width:200px;height:200px;background:#0EA5E9;opacity:0.12;bottom:60px;left:-50px;animation:clay-blob 12s ease-in-out infinite;}
+
+  /* Lock Overlay */
+  .lock-overlay{
+    position:absolute;inset:0;z-index:50;
+    background:var(--canvas);
+    display:none;
+    flex-direction:column;align-items:center;justify-content:center;
+    border-radius:48px;
+  }
+  .lock-overlay.show{display:flex;}
+  .lock-emoji{font-size:56px;margin-bottom:10px;animation:clay-blob 4s ease-in-out infinite;}
+  .lock-title{font-family:'Nunito',sans-serif;font-size:20px;font-weight:900;color:var(--fg);margin-bottom:20px;}
+  .lock-input{width:180px;border:none;background:var(--inset-bg);border-radius:18px;box-shadow:inset 6px 6px 12px var(--inset-shadow), inset -6px -6px 12px var(--shadow-2);padding:14px 18px;text-align:center;font-size:18px;font-weight:700;color:var(--fg);letter-spacing:0.4em;outline:none;}
+  .lock-input:focus{background:#fff;box-shadow:0 0 0 3px rgba(124,58,237,0.2);}
+  .lock-error{font-size:11px;color:var(--accent2);margin-top:10px;display:none;}
+
+  .screen{
+    flex:1;
+    overflow-y:auto;
+    padding:24px 18px 10px;
+    display:none;
+    position:relative;
+    z-index:1;
+    animation:fadeIn .3s ease-out;
+  }
+  .screen.active{display:block;}
+  .screen::-webkit-scrollbar{width:0;}
+
+  /* SVG Icon System */
+  .icon{display:inline-block;vertical-align:middle;width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;}
+
+  .clay-card{
+    background:var(--card-bg);
+    backdrop-filter:blur(16px);
+    border-radius:32px;
+    box-shadow:16px 16px 32px rgba(160,150,180,0.2), -10px -10px 24px rgba(255,255,255,0.9), inset 6px 6px 12px rgba(139,92,246,0.03), inset -6px -6px 12px rgba(255,255,255,1);
+  }
+  .clay-button{
+    box-shadow:12px 12px 24px rgba(139,92,246,0.3), -8px -8px 16px rgba(255,255,255,0.4), inset 4px 4px 8px rgba(255,255,255,0.4), inset -4px -4px 8px rgba(0,0,0,0.1);
+    transition:all .2s;
+  }
+  .clay-button:active{
+    transform:scale(0.92);
+    box-shadow:inset 10px 10px 20px #d9d4e3, inset -10px -10px 20px #ffffff;
+  }
+  .clay-pressed{
+    background:#EFEBF5;
+    box-shadow:inset 10px 10px 20px #d9d4e3, inset -10px -10px 20px #ffffff;
+  }
+  .clay-hover{transition:all .3s;}
+  .clay-hover:hover{transform:translateY(-3px);}
+
+  /* Home */
+  .greeting-date{font-size:11px;color:var(--muted);font-weight:500;}
+  .greeting-title{font-family:'Nunito',sans-serif;font-size:21px;font-weight:900;color:var(--fg);margin-top:2px;}
+  .quote-box{
+    font-size:11.5px;color:var(--accent2);font-weight:700;
+    margin-top:8px;line-height:1.4;display:flex;align-items:center;gap:6px;cursor:pointer;
+  }
+  .section-label{font-family:'Nunito',sans-serif;font-size:12px;color:var(--muted);font-weight:800;margin:18px 0 10px;text-transform:uppercase;letter-spacing:0.03em;}
+
+  .timeline-item{display:flex;gap:10px;margin-bottom:14px;}
+  .timeline-time-col{display:flex;flex-direction:column;align-items:center;min-width:34px;}
+  .timeline-time{font-size:10px;color:var(--muted);white-space:nowrap;font-weight:700;}
+  .timeline-line{width:2px;flex:1;background:rgba(124,58,237,0.15);margin-top:2px;}
+  .timeline-icon{
+    width:34px;height:34px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:16px;
+    background:var(--canvas);
+    box-shadow:5px 5px 12px rgba(160,150,180,0.25),-4px -4px 10px rgba(255,255,255,0.9);
+  }
+  .timeline-text{font-size:12.5px;color:var(--fg);font-weight:500;padding-top:6px;line-height:1.5;}
+  .timeline-text p{margin:0.3em 0;}
+  .timeline-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;}
+  .timeline-tag{font-size:8.5px;padding:2px 8px;border-radius:6px;background:var(--accent-light);color:#fff;font-weight:700;}
+  .timeline-actions{display:flex;gap:4px;padding-top:4px;flex-shrink:0;}
+  .timeline-actions .icon{font-size:15px;color:var(--muted);cursor:pointer;padding:3px;border-radius:6px;transition:background .15s;}
+  .timeline-actions .icon:hover{background:var(--inset-bg);}
+  .empty-state{text-align:center;padding:30px 10px;color:var(--muted);font-size:12px;font-weight:500;}
+
+  /* Journal */
+  .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .cal-nav{
+    width:28px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;background:var(--canvas);
+    box-shadow:5px 5px 10px rgba(160,150,180,0.25),-4px -4px 10px rgba(255,255,255,0.9);
+  }
+  .cal-nav .icon{font-size:14px;color:var(--muted);}
+  .cal-title{font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;color:var(--fg);}
+  .cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:8px;}
+  .cal-weekdays div{text-align:center;font-size:9px;color:var(--muted);font-weight:800;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:20px;}
+  .cal-cell{
+    aspect-ratio:1;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    font-size:12px;cursor:pointer;color:#c3bdd4;font-weight:600;
+  }
+  .cal-cell.today{color:var(--accent);font-weight:800;background:var(--inset-bg);}
+  .cal-cell.has-mood{
+    color:inherit;background:var(--canvas);
+    box-shadow:4px 4px 9px rgba(160,150,180,0.25),-3px -3px 8px rgba(255,255,255,0.9);
+  }
+  .cal-cell.selected{box-shadow:0 0 0 2px var(--accent);}
+
+  .day-title{font-family:'Nunito',sans-serif;font-size:13.5px;font-weight:800;color:var(--accent);margin-bottom:2px;}
+  .day-sub{font-size:10.5px;color:var(--muted);margin-bottom:12px;font-weight:500;}
+
+  /* Stats */
+  .tab-row{display:flex;gap:8px;margin-bottom:18px;}
+  .tab-btn{flex:1;padding:8px 0;text-align:center;border-radius:14px;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;background:var(--canvas);
+    box-shadow:4px 4px 9px rgba(160,150,180,0.2),-3px -3px 8px rgba(255,255,255,0.9);}
+  .tab-btn.active{color:#fff;font-weight:800;background:linear-gradient(135deg,var(--accent-light),var(--accent));box-shadow:none;}
+  .metric-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px;}
+  .metric-card{border-radius:20px;padding:12px 14px;}
+  .metric-label{font-size:10px;color:var(--muted);font-weight:700;}
+  .metric-value{font-family:'Nunito',sans-serif;font-size:19px;font-weight:800;color:var(--fg);margin-top:3px;}
+  .chart-box{border-radius:20px;padding:12px 12px 6px;margin-bottom:20px;}
+  .bar-row{margin-bottom:10px;}
+  .bar-row-top{display:flex;justify-content:space-between;font-size:11.5px;color:var(--fg);font-weight:700;margin-bottom:5px;}
+  .bar-track{height:9px;border-radius:5px;overflow:hidden;background:var(--inset-bg);box-shadow:inset 3px 3px 6px var(--inset-shadow);}
+  .bar-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--accent-light),var(--accent));}
+  .pill-row{display:flex;flex-wrap:wrap;gap:7px;}
+  .mood-pill{display:flex;align-items:center;gap:4px;font-size:10.5px;color:var(--fg);font-weight:700;border-radius:12px;padding:5px 10px;background:var(--canvas);
+    box-shadow:4px 4px 9px rgba(160,150,180,0.2),-3px -3px 8px rgba(255,255,255,0.9);}
+
+  /* Settings */
+  .profile-card{display:flex;align-items:center;gap:12px;border-radius:22px;padding:14px 16px;margin:16px 0 20px;}
+  .profile-avatar{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;
+    background:linear-gradient(135deg,var(--accent-light),var(--accent));}
+  .profile-name{font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;color:var(--fg);}
+  .profile-sub{font-size:10.5px;color:var(--muted);font-weight:500;}
+  .settings-group{border-radius:22px;margin-bottom:18px;overflow:hidden;}
+  .settings-row{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;cursor:pointer;}
+  .settings-row-left{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--fg);font-weight:600;}
+  .settings-row-left .icon{font-size:18px;color:var(--accent);}
+  .settings-divider{height:1px;background:rgba(124,58,237,0.08);margin:0 16px;}
+  .toggle{width:36px;height:20px;border-radius:10px;position:relative;cursor:pointer;transition:all .2s;flex-shrink:0;}
+  .toggle-knob{width:16px;height:16px;border-radius:50%;position:absolute;top:2px;background:#fff;transition:left .2s,right .2s;}
+  .toggle.off{background:var(--inset-bg);box-shadow:inset 4px 4px 8px var(--inset-shadow),inset -4px -4px 8px var(--shadow-2);}
+  .toggle.off .toggle-knob{background:#c3bdd4;left:2px;}
+  .toggle.on{background:linear-gradient(135deg,var(--accent-light),var(--accent));}
+  .toggle.on .toggle-knob{right:2px;left:auto;}
+  .danger-btn{text-align:center;padding:10px 14px;border-radius:18px;font-size:11.5px;color:#DC2626;font-weight:700;cursor:pointer;background:rgba(220,38,38,0.06);}
+  .hidden{display:none !important;}
+
+  /* Toast */
+  .toast-container{
+    position:absolute;bottom:90px;left:50%;transform:translateX(-50%);z-index:60;
+    display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;
+  }
+  .toast{
+    padding:10px 20px;border-radius:16px;background:var(--fg);color:var(--canvas);
+    font-size:11px;font-weight:700;pointer-events:auto;
+    box-shadow:0 8px 24px var(--overlay);
+    animation:slideUp .3s ease-out;
+    white-space:nowrap;
+  }
+  .toast.success{background:var(--accent);}
+  .toast.error{background:var(--accent2);}
+
+  /* Edit Modal */
+  .edit-overlay{
+    position:absolute;inset:0;z-index:40;
+    background:var(--overlay);backdrop-filter:blur(4px);
+    display:none;align-items:flex-end;justify-content:center;
+    border-radius:48px;overflow:hidden;
+  }
+  .edit-overlay.show{display:flex;}
+  .edit-sheet{
+    width:100%;max-height:80vh;overflow-y:auto;
+    background:var(--canvas);border-radius:32px 32px 0 0;
+    padding:24px 20px 20px;
+    animation:slideUp .3s ease-out;
+  }
+  .edit-sheet .edit-handle{
+    width:36px;height:4px;border-radius:2px;background:var(--muted);margin:0 auto 14px;opacity:0.3;
+  }
+  .edit-mood-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:14px;}
+  .edit-mood-item{text-align:center;cursor:pointer;}
+  .edit-mood-item .mood-circle{width:100%;aspect-ratio:1;font-size:16px;}
+  .mood-circle{
+    width:100%;aspect-ratio:1;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-size:19px;
+    background:var(--canvas);
+    box-shadow:6px 6px 14px rgba(160,150,180,0.25), -5px -5px 12px rgba(255,255,255,0.9);
+    transition:all .2s;
+  }
+  .mood-circle.selected{
+    background:linear-gradient(135deg,var(--accent-light),var(--accent));
+    box-shadow:6px 6px 14px rgba(124,58,237,0.35), -5px -5px 12px rgba(255,255,255,0.5);
+  }
+  .mood-label{font-size:9px;color:var(--muted);margin-top:5px;font-weight:700;}
+  .mood-label.selected{color:var(--accent);}
+  .tag-input-line{
+    display:flex;gap:6px;align-items:center;margin-top:10px;flex-wrap:wrap;
+  }
+  .tag-input-line input{
+    flex:1;min-width:80px;border:none;background:var(--inset-bg);border-radius:14px;
+    box-shadow:inset 5px 5px 10px var(--inset-shadow), inset -5px -5px 10px var(--shadow-2);
+    padding:10px 12px;font-family:inherit;font-size:11.5px;color:var(--fg);
+  }
+  .tag-input-line input:focus{outline:none;background:#fff;box-shadow:0 0 0 2px rgba(124,58,237,0.2);}
+  .tag-chip{
+    display:inline-flex;align-items:center;gap:4px;padding:4px 10px;
+    border-radius:10px;font-size:10px;font-weight:700;background:var(--accent);color:#fff;
+    animation:fadeIn .2s ease-out;
+  }
+  .tag-chip .remove-tag{cursor:pointer;opacity:0.7;font-size:12px;line-height:1;}
+  .tag-chip .remove-tag:hover{opacity:1;}
+  .save-btn{
+    width:100%;padding:14px;border-radius:20px;text-align:center;
+    font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;color:#fff;cursor:pointer;
+    margin-top:12px;
+    background:linear-gradient(135deg,var(--accent-light),var(--accent));
+  }
+  .quick-note{
+    width:100%;border:none;background:var(--inset-bg);border-radius:20px;
+    box-shadow:inset 8px 8px 16px var(--inset-shadow), inset -8px -8px 16px var(--shadow-2);
+    padding:12px 14px;font-family:inherit;font-size:12.5px;color:var(--fg);
+    resize:none;
+  }
+  .quick-note:focus{outline:none;background:#fff;box-shadow:0 0 0 3px rgba(124,58,237,0.2);}
+
+  /* Bottom nav */
+  .bottom-nav{
+    flex-shrink:0;background:var(--canvas);
+    box-shadow:0 -6px 16px var(--shadow-1);
+    padding:12px 14px 18px;display:flex;align-items:center;justify-content:space-between;
+    position:relative;z-index:1;
+  }
+  .nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;cursor:pointer;}
+  .nav-icon-box{width:36px;height:36px;border-radius:14px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+  .nav-icon-box .icon{font-size:20px;color:var(--muted);}
+  .nav-icon-box.active{background:var(--inset-bg);box-shadow:inset 3px 3px 6px var(--inset-shadow),inset -3px -3px 6px var(--shadow-2);}
+  .nav-icon-box.active .icon{color:var(--accent);}
+  .nav-text{font-size:8.5px;color:var(--muted);font-weight:600;}
+  .nav-text.active{color:var(--accent);font-weight:800;}
+  .nav-item.add-item{position:relative;top:-16px;}
+  .add-circle{
+    width:50px;height:50px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,#FBBF24,var(--warning));
+    box-shadow:10px 10px 20px rgba(245,158,11,0.35), -6px -6px 14px rgba(255,255,255,0.5);
+    transition:transform .2s;
+  }
+  .add-circle:active{transform:scale(0.88) rotate(90deg);}
+  .add-circle .icon{font-size:24px;color:#fff;}
+
+  /* Locket-style Capture Overlay */
+  .capture-overlay{
+    position:absolute;inset:0;z-index:45;
+    background:#000;
+    display:none;flex-direction:column;
+    border-radius:48px;overflow:hidden;
+    animation:fadeIn .25s ease-out;
+  }
+  .capture-overlay.show{display:flex;}
+  /* Background layers behind everything */
+  .capture-bg-layer{
+    position:absolute;inset:0;z-index:0;
+    display:flex;align-items:center;justify-content:center;
+    padding:0 16px;
+  }
+  .capture-bg-layer .cam-square{
+    width:100%;max-width:100%;aspect-ratio:1/1;
+    border-radius:20px;overflow:hidden;position:relative;
+    background:#1a1a1e;
+  }
+  .capture-bg-layer .cam-square video,.capture-bg-layer .cam-square .captured-preview{
+    width:100%;height:100%;object-fit:cover;display:block;
+  }
+  .capture-bg-layer .cam-square .camera-placeholder{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:linear-gradient(180deg,rgba(140,100,220,0.08),rgba(0,0,0,0.3));
+    color:#555;gap:12px;border-radius:20px;
+  }
+  .capture-bg-layer .cam-square .camera-placeholder .icon{font-size:44px;color:rgba(255,255,255,0.15);}
+  .capture-bg-layer .cam-square .camera-placeholder span{font-size:12px;color:rgba(255,255,255,0.25);font-weight:600;}
+  .capture-text-layer{
+    position:absolute;inset:0;z-index:0;
+    display:none;align-items:center;justify-content:center;padding:0 24px;
+    background:radial-gradient(120% 100% at 30% 0%, #3d3a2e, #1c1a16 70%);
+  }
+  .capture-text-layer.show{display:flex;}
+  .capture-text-layer .text-square{
+    width:100%;aspect-ratio:1/1;
+    display:flex;flex-direction:column;
+    padding:40px 16px 20px;border-radius:20px;
+    background:rgba(0,0,0,0.25);
+  }
+  .capture-text-layer .text-square textarea{
+    flex:1;width:100%;border:none;background:transparent;resize:none;
+    font-size:22px;font-weight:500;color:rgba(255,255,255,0.9);
+    font-family:'DM Sans',sans-serif;line-height:1.5;box-shadow:none;padding:0;
+  }
+  .capture-text-layer textarea:focus{outline:none;box-shadow:none;}
+  .capture-text-layer textarea::placeholder{color:rgba(255,255,255,0.2);font-style:italic;font-size:18px;}
+  .capture-text-layer .text-counter{text-align:right;font-size:12px;font-weight:600;color:rgba(255,255,255,0.25);margin-top:12px;padding:0;}
+  .capture-text-layer .text-counter.over{color:#f87171;}
+
+  /* Overlay UI sits on top */
+  .capture-ui{
+    position:relative;z-index:2;
+    display:flex;flex-direction:column;flex:1;
+  }
+  .capture-top{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 14px;
+  }
+  .capture-top .capture-btn{
+    width:38px;height:38px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0.45);backdrop-filter:blur(8px);border:none;cursor:pointer;
+    transition:transform .15s;
+    border:1px solid rgba(255,255,255,0.1);
+  }
+  .capture-top .capture-btn:active{transform:scale(0.85);}
+  .capture-top .capture-btn .icon{color:#fff;font-size:16px;}
+  .capture-top .capture-btn.active-flash{background:rgba(255,200,50,0.35);border-color:rgba(255,200,50,0.4);}
+  .capture-top .capture-time{font-size:13px;font-weight:700;color:#fff;letter-spacing:0.02em;text-shadow:0 2px 8px rgba(0,0,0,0.5);}
+  .capture-top .capture-date{font-size:9px;color:rgba(255,255,255,0.6);font-weight:600;text-shadow:0 2px 8px rgba(0,0,0,0.5);}
+  .capture-middle{flex:1;}
+  .capture-mode-pill{
+    display:flex;align-items:center;justify-content:center;
+    padding:6px 0 8px;
+  }
+  .capture-mode-pill .toggle-pill{
+    display:inline-flex;border-radius:24px;overflow:hidden;
+    background:rgba(0,0,0,0.4);backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,0.08);
+  }
+  .capture-mode-pill .toggle-pill-btn{
+    padding:7px 22px;font-size:12px;font-weight:700;color:rgba(255,255,255,0.5);
+    cursor:pointer;transition:all .2s;border:none;background:transparent;letter-spacing:0.01em;
+  }
+  .capture-mode-pill .toggle-pill-btn.active{color:#fff;background:rgba(255,255,255,0.18);border-radius:24px;}
+  .capture-bottom{
+    display:flex;align-items:center;justify-content:space-evenly;
+    padding:6px 16px 22px;
+  }
+  .capture-bottom .capture-btn{
+    width:44px;height:44px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0.35);backdrop-filter:blur(8px);border:1.5px solid rgba(255,255,255,0.15);cursor:pointer;
+    transition:transform .15s,background .15s;
+  }
+  .capture-bottom .capture-btn:hover{background:rgba(255,255,255,0.15);}
+  .capture-bottom .capture-btn:active{transform:scale(0.85);}
+  .capture-bottom .capture-btn .icon{color:#fff;font-size:18px;}
+  .locket-shutter{
+    width:72px;height:72px;border-radius:50%;border:4px solid rgba(255,255,255,0.9);
+    background:transparent;cursor:pointer;position:relative;
+    transition:transform .12s;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .locket-shutter:active{transform:scale(0.9);}
+  .locket-shutter::after{
+    content:'';width:56px;height:56px;border-radius:50%;
+    background:#fff;
+    transition:transform .12s;
+  }
+  .locket-shutter:active::after{transform:scale(0.88);}
+  .locket-send{
+    width:72px;height:72px;border-radius:50%;border:none;cursor:pointer;
+    background:linear-gradient(135deg,#A78BFA,#7C3AED);
+    display:flex;align-items:center;justify-content:center;
+    transition:transform .12s;
+  }
+  .locket-send:active{transform:scale(0.9);}
+  .locket-send .icon{color:#fff;font-size:28px;}
+  .mood-step{
+    position:absolute;inset:0;z-index:5;
+    background:rgba(0,0,0,0.75);backdrop-filter:blur(20px);
+    display:none;flex-direction:column;
+    align-items:center;justify-content:center;
+    padding:40px 24px;
+    animation:fadeIn .2s ease-out;
+  }
+  .mood-step.show{display:flex;}
+  .mood-step .mood-preview-thumb{
+    width:48px;height:48px;border-radius:14px;overflow:hidden;
+    margin-bottom:8px;background:rgba(255,255,255,0.06);
+  }
+  .mood-step .mood-preview-thumb img,.mood-step .mood-preview-thumb .text-preview{
+    width:100%;height:100%;object-fit:cover;
+    display:flex;align-items:center;justify-content:center;
+    font-size:10px;color:rgba(255,255,255,0.4);text-align:center;
+    line-height:1.2;padding:4px;
+  }
+  .mood-step .step-heading{font-size:17px;font-weight:800;color:#fff;margin-bottom:18px;font-family:'Nunito',sans-serif;}
+  .mood-step .mood-grid{grid-template-columns:repeat(4,1fr);gap:14px;max-width:320px;}
+  .mood-step .mood-circle{background:rgba(255,255,255,0.06);box-shadow:none;font-size:22px;backdrop-filter:blur(4px);}
+  .mood-step .mood-circle.selected{background:linear-gradient(135deg,var(--accent-light),var(--accent));box-shadow:0 4px 20px rgba(124,58,237,0.4);}
+  .mood-step .mood-label{color:rgba(255,255,255,0.4);font-size:10px;}
+  .mood-step .mood-label.selected{color:#fff;}
+  .mood-step-confirm{
+    margin-top:18px;padding:12px 36px;border-radius:30px;
+    font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;color:#fff;cursor:pointer;
+    background:linear-gradient(135deg,#A78BFA,#7C3AED);
+    transition:transform .12s;
+  }
+  .mood-step-confirm:active{transform:scale(0.94);}
+  .mood-step-back{text-align:center;margin-top:10px;font-size:11px;color:rgba(255,255,255,0.35);font-weight:600;cursor:pointer;}
+
+  input[type=text], textarea{
+    width:100%;border:none;background:var(--inset-bg);border-radius:16px;
+    box-shadow:inset 6px 6px 12px var(--inset-shadow), inset -6px -6px 12px var(--shadow-2);
+    padding:11px 14px;font-family:inherit;font-size:12.5px;color:var(--fg);
+  }
+  .scroll-touch{-webkit-overflow-scrolling:touch;}
+  @media(max-width:420px){.phone{max-height:100vh;border-radius:0;}}
+</style>
+</head>
+<body>
+
+<div class="phone" id="phone">
+  <div class="blob-layer">
+    <div class="blob blob1"></div>
+    <div class="blob blob2"></div>
+    <div class="blob blob3"></div>
+  </div>
+
+  <!-- LOCK OVERLAY -->
+  <div class="lock-overlay" id="lock-overlay">
+    <div class="lock-emoji">📔</div>
+    <div class="lock-title">Nhật Ký Cảm Xúc</div>
+    <input class="lock-input" id="lock-input" type="password" maxlength="6" placeholder="••••" autocomplete="off" inputmode="numeric">
+    <div class="lock-error" id="lock-error">Sai mật mã, thử lại nhé</div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- HOME -->
+  <div class="screen active scroll-touch" id="screen-home">
+    <div>
+      <div class="greeting-date" id="home-date"></div>
+      <div class="greeting-title" id="home-greeting"></div>
+      <div class="quote-box" onclick="newQuote()">
+        <span id="home-quote"></span>
+        <svg class="icon" viewBox="0 0 24 24" width="14" height="14" style="font-size:14px;">
+          <circle cx="12" cy="12" r="9"/>
+          <path d="M16 8v4h-4"/>
+          <path d="M8 16v-4h4"/>
+        </svg>
+      </div>
+    </div>
+    <div class="section-label">Hôm nay của bạn</div>
+    <div id="home-timeline"></div>
+  </div>
+
+  <!-- JOURNAL -->
+  <div class="screen scroll-touch" id="screen-journal">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+      <div class="heading" style="font-size:19px;font-weight:900;color:var(--fg);">Nhật ký</div>
+    </div>
+    <div class="cal-header">
+      <div class="cal-nav clay-button" onclick="changeMonth(-1)">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>
+      </div>
+      <div class="cal-title" id="cal-title"></div>
+      <div class="cal-nav clay-button" onclick="changeMonth(1)">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+      </div>
+    </div>
+    <div class="cal-weekdays"><div>T2</div><div>T3</div><div>T4</div><div>T5</div><div>T6</div><div>T7</div><div>CN</div></div>
+    <div class="cal-grid" id="cal-grid"></div>
+    <div class="day-title" id="journal-day-title"></div>
+    <div class="day-sub" id="journal-day-sub"></div>
+    <div id="journal-list"></div>
+  </div>
+
+  <!-- STATS -->
+  <div class="screen scroll-touch" id="screen-stats">
+    <div class="heading" style="font-size:19px;font-weight:900;color:var(--fg);margin-bottom:18px;">Thống kê</div>
+    <div class="tab-row">
+      <div class="tab-btn active" id="tab-week" onclick="setStatsRange('week')">Tuần</div>
+      <div class="tab-btn" id="tab-month" onclick="setStatsRange('month')">Tháng</div>
+      <div class="tab-btn" id="tab-year" onclick="setStatsRange('year')">Năm</div>
+    </div>
+    <div class="metric-grid">
+      <div class="metric-card clay-card">
+        <div class="metric-label">Mood trung bình</div>
+        <div class="metric-value" id="stat-avg-mood">—</div>
+      </div>
+      <div class="metric-card clay-card">
+        <div class="metric-label">Streak ghi bài</div>
+        <div class="metric-value" id="stat-streak">0 ngày</div>
+      </div>
+    </div>
+    <div class="section-label" style="margin-top:0;">Xu hướng cảm xúc</div>
+    <div class="chart-box clay-pressed">
+      <div style="position:relative;height:120px;">
+        <canvas id="moodChart" role="img" aria-label="Biểu đồ mức độ mood theo thời gian">Biểu đồ mood theo thời gian.</canvas>
+      </div>
+    </div>
+    <div class="section-label">Cảm xúc thường gặp</div>
+    <div id="activity-bars"></div>
+    <div class="section-label">Phân bố cảm xúc</div>
+    <div class="pill-row" id="mood-distribution"></div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="screen scroll-touch" id="screen-settings">
+    <div class="heading" style="font-size:19px;font-weight:900;color:var(--fg);">Cài đặt</div>
+    <div class="profile-card clay-card">
+      <div class="profile-avatar">😄</div>
+      <div>
+        <div class="profile-name">Bình</div>
+        <div class="profile-sub" id="settings-count">Đã ghi 0 khoảnh khắc</div>
+      </div>
+    </div>
+    <div class="section-label" style="margin-top:0;">Chung</div>
+    <div class="settings-group clay-card">
+      <div class="settings-row" onclick="toggleSetting('darkmode')">
+        <div class="settings-row-left">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.39 5.39 0 0 1-4.4 2.26 5.4 5.4 0 0 1-5.39-5.39A5.4 5.4 0 0 1 13.36 3.1 9 9 0 0 0 12 3z"/></svg>
+          Giao diện tối
+        </div>
+        <div class="toggle off" id="toggle-dark"><div class="toggle-knob"></div></div>
+      </div>
+      <div class="settings-divider"></div>
+      <div class="settings-row" onclick="toggleSetting('reminder')">
+        <div class="settings-row-left">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          Nhắc ghi nhật ký
+        </div>
+        <div class="toggle on" id="toggle-reminder"><div class="toggle-knob"></div></div>
+      </div>
+      <div class="settings-divider"></div>
+      <div class="settings-row" onclick="toggleSetting('lock')">
+        <div class="settings-row-left">
+          <svg class="icon" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1"/></svg>
+          Khóa ứng dụng
+        </div>
+        <div class="toggle off" id="toggle-lock"><div class="toggle-knob"></div></div>
+      </div>
+    </div>
+    <div class="section-label">Dữ liệu</div>
+    <div class="settings-group clay-card">
+      <div class="settings-row" onclick="exportData()">
+        <div class="settings-row-left">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v10"/><path d="M8 11l4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+          Xuất dữ liệu (JSON)
+        </div>
+        <div><svg class="icon" viewBox="0 0 24 24" style="font-size:12px;color:var(--muted);"><path d="M9 6l6 6-6 6"/></svg></div>
+      </div>
+      <div class="settings-divider"></div>
+      <div class="settings-row" onclick="document.getElementById('import-file').click()">
+        <div class="settings-row-left">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M12 19V9"/><path d="M16 13l-4-4-4 4"/><path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2"/></svg>
+          Nhập dữ liệu (JSON)
+        </div>
+        <div><svg class="icon" viewBox="0 0 24 24" style="font-size:12px;color:var(--muted);"><path d="M9 6l6 6-6 6"/></svg></div>
+      </div>
+      <input type="file" id="import-file" accept=".json" style="display:none;">
+    </div>
+    <div class="section-label">Khác</div>
+    <div class="settings-group clay-card">
+      <div class="settings-row">
+        <div class="settings-row-left">
+          <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          Phiên bản
+        </div>
+        <div style="font-size:10px;color:var(--muted);">v2.0 · Cảm xúc hoàn chỉnh</div>
+      </div>
+    </div>
+    <div class="danger-btn" onclick="clearAllData()">Xóa toàn bộ dữ liệu</div>
+    <div style="height:10px;"></div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="showScreen('home')">
+      <div class="nav-icon-box" id="nav-icon-home">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 0 0 1 1h3m10-11l2 2m-2-2v10a1 1 0 0 1-1 1h-3m-6 0a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1m-6 0h6"/></svg>
+      </div>
+      <div class="nav-text" id="nav-text-home">Trang chủ</div>
+    </div>
+    <div class="nav-item" onclick="showScreen('journal')">
+      <div class="nav-icon-box" id="nav-icon-journal">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6z"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M4 10h16"/><path d="M10 14h4"/><path d="M12 14v4"/></svg>
+      </div>
+      <div class="nav-text" id="nav-text-journal">Nhật ký</div>
+    </div>
+    <div class="nav-item add-item" onclick="openCapture()">
+      <div class="add-circle">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+      </div>
+    </div>
+    <div class="nav-item" onclick="showScreen('stats')">
+      <div class="nav-icon-box" id="nav-icon-stats">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M4 20h16"/><path d="M6 16V10"/><path d="M12 16V6"/><path d="M18 16v-4"/></svg>
+      </div>
+      <div class="nav-text" id="nav-text-stats">Thống kê</div>
+    </div>
+    <div class="nav-item" onclick="showScreen('settings')">
+      <div class="nav-icon-box" id="nav-icon-settings">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </div>
+      <div class="nav-text" id="nav-text-settings">Cài đặt</div>
+    </div>
+  </div>
+
+  <!-- LOCKET-STYLE CAPTURE OVERLAY -->
+  <div class="capture-overlay" id="capture-overlay">
+    <!-- Background layers (behind) -->
+    <div class="capture-bg-layer">
+      <div class="cam-square">
+        <video id="camera-video" autoplay playsinline muted style="display:none;"></video>
+        <div class="camera-placeholder" id="camera-placeholder">
+          <svg class="icon" viewBox="0 0 24 24" style="font-size:44px;"><circle cx="12" cy="12" r="3"/><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/></svg>
+          <span>Camera</span>
+        </div>
+        <img class="captured-preview" id="captured-preview" style="display:none;" />
+      </div>
+    </div>
+    <div class="capture-text-layer" id="capture-text-layer">
+      <div class="text-square">
+        <textarea id="capture-textarea" maxlength="100" placeholder="Bình, how's your day going?"></textarea>
+        <div class="text-counter" id="text-counter">0/100</div>
+      </div>
+    </div>
+
+    <!-- UI overlay (in front) -->
+    <div class="capture-ui">
+      <div class="capture-top">
+        <button class="capture-btn" onclick="closeCapture()">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+        </button>
+        <div style="text-align:center;">
+          <div class="capture-time" id="capture-time"></div>
+          <div class="capture-date" id="capture-date"></div>
+        </div>
+        <button class="capture-btn" id="capture-flash-toggle" onclick="toggleFlash()">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        </button>
+      </div>
+      <div class="capture-middle"></div>
+      <div class="capture-mode-pill">
+        <div class="toggle-pill">
+          <button class="toggle-pill-btn active" id="toggle-photo" onclick="setCaptureMode('photo')">📷 Photo</button>
+          <button class="toggle-pill-btn" id="toggle-text" onclick="setCaptureMode('text')">✏️ Text</button>
+        </div>
+      </div>
+      <div class="capture-bottom" id="capture-bottom">
+        <button class="capture-btn" onclick="pickPhoto()">
+          <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </button>
+        <div class="locket-shutter" id="locket-shutter" onclick="takePhoto()"></div>
+        <div class="locket-send" id="locket-send" style="display:none;" onclick="sendText()">
+          <svg class="icon" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </div>
+        <button class="capture-btn" id="flip-btn" onclick="flipCamera()">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        </button>
+        <input type="file" id="photo-picker" accept="image/*" style="display:none;">
+      </div>
+    </div>
+
+    <!-- Mood step overlays -->
+    <div class="mood-step" id="capture-mood-step">
+      <div class="mood-preview-thumb"><img id="mood-step-img" style="display:none;" /><div class="text-preview" id="mood-step-text-preview">...</div></div>
+      <div class="step-heading">Bạn đang cảm thấy thế nào?</div>
+      <div class="mood-grid" id="capture-mood-grid"></div>
+      <div class="mood-step-confirm" onclick="confirmCaptureSave()">Lưu khoảnh khắc</div>
+      <div class="mood-step-back" onclick="backFromMoodStep()">Quay lại</div>
+    </div>
+    <div class="mood-step" id="capture-mood-step-text">
+      <div class="mood-preview-thumb"><div class="text-preview" id="mood-step-text-preview2">"&#8230;"</div></div>
+      <div class="step-heading">Bạn đang cảm thấy thế nào?</div>
+      <div class="mood-grid" id="capture-mood-grid-text"></div>
+      <div class="mood-step-confirm" onclick="confirmTextSave()">Lưu khoảnh khắc</div>
+      <div class="mood-step-back" onclick="backFromTextMoodStep()">Quay lại</div>
+    </div>
+  </div>
+
+  <!-- EDIT MODAL -->
+  <div class="edit-overlay" id="edit-overlay">
+    <div class="edit-sheet">
+      <div class="edit-handle"></div>
+      <div class="section-label">Chỉnh sửa khoảnh khắc</div>
+      <div class="edit-mood-grid" id="edit-mood-grid"></div>
+      <textarea class="quick-note" id="edit-note" rows="3" placeholder="Ghi chú&#8230;"></textarea>
+      <div class="tag-input-line" style="margin-bottom:14px;">
+        <input type="text" id="edit-tag-input" placeholder="Tag&#8230;" />
+        <div id="edit-tag-chips"></div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="save-btn clay-button" style="flex:1;padding:12px;font-size:12px;" onclick="editSave()">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+          Lưu
+        </button>
+        <button class="save-btn clay-button" style="flex:0;padding:12px 16px;font-size:12px;background:linear-gradient(135deg,#f87171,#dc2626);" onclick="editDelete()">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+        </button>
+      </div>
+      <div style="text-align:center;margin-top:8px;">
+        <span style="font-size:10.5px;color:var(--muted);font-weight:600;cursor:pointer;" onclick="closeEdit()">Hủy</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================= CUSTOM ICON SYSTEM ================= */
+const ICON_SVGS = {
+  edit:    '<svg class="icon" viewBox="0 0 24 24"><path d="M17 3l4 4L7 21H3v-4L17 3z"/></svg>',
+  trash:   '<svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>'
+};
+function icon(name) { return ICON_SVGS[name] || ''; }
+
+/* ================= DATA ================= */
+const MOODS = [
+  {id:'vui', label:'Vui vẻ', emoji:'😄', score:5},
+  {id:'phankhich', label:'Phấn khích', emoji:'🤩', score:5},
+  {id:'metmoi', label:'Mệt mỏi', emoji:'😴', score:2},
+  {id:'buon', label:'Buồn', emoji:'😢', score:1},
+  {id:'uam', label:'U ám', emoji:'🌥️', score:2},
+  {id:'lolang', label:'Lo lắng', emoji:'😰', score:2},
+  {id:'tucgian', label:'Tức giận', emoji:'😡', score:1}
+];
+const moodMap = Object.fromEntries(MOODS.map(m=>[m.id,m]));
+
+const QUOTES = [
+  "Mỗi ngày là một trang nhật ký, hãy viết nó thật đẹp.",
+  "Hôm nay có thể khó khăn, nhưng ngày mai vẫn đang chờ bạn.",
+  "Cảm xúc nào cũng là một phần của hành trình.",
+  "Chậm lại một chút cũng không sao, quan trọng là bạn vẫn đang tiến lên.",
+  "Ghi lại hôm nay, để mai này nhìn lại và mỉm cười.",
+  "Bạn đã cố gắng rất nhiều rồi, hãy tự hào về điều đó.",
+  "Những điều nhỏ bé hôm nay sẽ tạo nên câu chuyện lớn ngày mai.",
+  "Có những ngày chỉ cần thở thôi cũng là một chiến thắng.",
+  "Đôi khi im lặng cũng là một câu trả lời."
+];
+
+let calMonth = new Date().getMonth();
+let calYear = new Date().getFullYear();
+let selectedDate = todayKey();
+let statsRange = 'week';
+let editEntryId = null;
+let editSelectedMood = null;
+let editingTags = [];
+
+/* helpers */
+function todayKey() {
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function fmtTime(ts) {
+  const d = new Date(ts);
+  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+function greetingByHour() {
+  const h = new Date().getHours();
+  if(h < 11) return 'Chào buổi sáng';
+  if(h < 13) return 'Chào buổi trưa';
+  if(h < 18) return 'Chào buổi chiều';
+  return 'Chào buổi tối';
+}
+
+/* localStorage */
+const LS = {
+  entries() { try { return JSON.parse(localStorage.getItem('mood_entries')||'[]'); } catch { return []; } },
+  saveEntries(list) { localStorage.setItem('mood_entries', JSON.stringify(list)); },
+  settings() { try { return JSON.parse(localStorage.getItem('mood_settings')||'{}'); } catch { return {}; } },
+  saveSettings(s) { localStorage.setItem('mood_settings', JSON.stringify(s)); },
+  initSettings() {
+    const s = this.settings();
+    const d = { darkmode:false, lock:false, lockPass:'', reminder:true };
+    let c = false;
+    for(const [k,v] of Object.entries(d)) { if(s[k]===undefined) { s[k]=v; c=true; } }
+    if(c) this.saveSettings(s);
+    return s;
+  }
+};
+
+/* Toast */
+function toast(msg, type='success') {
+  const el = document.createElement('div');
+  el.className = 'toast '+type;
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateY(12px)'; el.style.transition='all .3s'; setTimeout(()=>el.remove(),300); }, 2500);
+}
+
+/* Lock Screen */
+function checkLock() {
+  const s = LS.settings();
+  if(s.lock && s.lockPass) {
+    document.getElementById('lock-overlay').classList.add('show');
+    document.getElementById('lock-input').focus();
+  } else {
+    document.getElementById('lock-overlay').classList.remove('show');
+  }
+}
+document.getElementById('lock-input').addEventListener('keydown', e=>{
+  if(e.key==='Enter') {
+    const s = LS.settings();
+    if(e.target.value === s.lockPass) {
+      document.getElementById('lock-overlay').classList.remove('show');
+      document.getElementById('lock-error').style.display='none';
+      e.target.value='';
+    } else {
+      document.getElementById('lock-error').style.display='block';
+      e.target.value='';
+    }
+  }
+});
+
+/* Edit Tag Helpers */
+function addEditTag() {
+  const input = document.getElementById('edit-tag-input');
+  const raw = input.value.trim();
+  if(!raw) return;
+  const tags = raw.split(/[,，\s]+/).map(t=>t.replace(/^#/,'').toLowerCase()).filter(Boolean);
+  tags.forEach(t=>{ if(!editingTags.includes(t)) editingTags.push(t); });
+  input.value='';
+  renderEditTags();
+}
+function removeEditTag(tag) {
+  const idx = editingTags.indexOf(tag);
+  if(idx>-1) editingTags.splice(idx,1);
+  renderEditTags();
+}
+function renderEditTags() {
+  const el = document.getElementById('edit-tag-chips');
+  if(!editingTags.length) { el.innerHTML=''; return; }
+  el.innerHTML = editingTags.map(t=>'<span class="tag-chip">#'+t+' <span class="remove-tag" data-tag="'+t+'">×</span></span>').join('');
+  el.querySelectorAll('.remove-tag').forEach(sp=>{
+    sp.addEventListener('click', e=>{
+      e.stopPropagation();
+      removeEditTag(sp.dataset.tag);
+    });
+  });
+}
+
+/* Mood Grid */
+function renderMoodGrid(containerId, selectedId, onclickFn) {
+  const grid = document.getElementById(containerId);
+  if(!grid) return;
+  grid.innerHTML = '';
+  MOODS.forEach(m=>{
+    const item = document.createElement('div');
+    item.className = 'mood-item';
+    item.onclick = ()=>onclickFn(m.id);
+    item.innerHTML = '<div class="mood-circle'+(selectedId===m.id?' selected':'')+'">'+m.emoji+'</div><div class="mood-label'+(selectedId===m.id?' selected':'')+'">'+m.label+'</div>';
+    grid.appendChild(item);
+  });
+}
+
+function editSelectMood(id) { editSelectedMood = id; renderMoodGrid('edit-mood-grid', editSelectedMood, editSelectMood); }
+
+/* Delete Entry */
+function deleteEntry(id) {
+  if(!confirm('Xóa khoảnh khắc này?')) return;
+  let entries = LS.entries();
+  entries = entries.filter(e=>e.id!==id);
+  LS.saveEntries(entries);
+  renderHome(); renderJournal(); renderStats(); updateSettingsCount();
+  toast('Đã xóa.');
+}
+
+/* Edit Entry */
+function openEdit(id) {
+  const entries = LS.entries();
+  const e = entries.find(x=>x.id===id);
+  if(!e) return;
+  editEntryId = id;
+  editSelectedMood = e.mood;
+  editingTags = [...(e.tags||[])];
+  document.getElementById('edit-note').value = e.text||'';
+  renderMoodGrid('edit-mood-grid', editSelectedMood, editSelectMood);
+  renderEditTags();
+  document.getElementById('edit-overlay').classList.add('show');
+}
+function closeEdit() {
+  document.getElementById('edit-overlay').classList.remove('show');
+  editEntryId = null;
+}
+function editSave() {
+  if(!editSelectedMood) { toast('Hãy chọn cảm xúc.', 'error'); return; }
+  let entries = LS.entries();
+  const idx = entries.findIndex(x=>x.id===editEntryId);
+  if(idx===-1) return;
+  entries[idx].mood = editSelectedMood;
+  entries[idx].text = document.getElementById('edit-note').value.trim();
+  entries[idx].tags = [...editingTags];
+  LS.saveEntries(entries);
+  closeEdit();
+  renderHome(); renderJournal(); renderStats();
+  toast('Đã cập nhật ✨');
+}
+function editDelete() {
+  if(!confirm('Xóa khoảnh khắc này?')) return;
+  deleteEntry(editEntryId);
+  closeEdit();
+}
+document.getElementById('edit-note').addEventListener('keydown', e=>{
+  if(e.key==='Enter' && (e.ctrlKey || e.metaKey)) editSave();
+});
+
+/* Tag input ENTER */
+document.getElementById('edit-tag-input').addEventListener('keydown', e=>{
+  if(e.key==='Enter'||e.key===',') { e.preventDefault(); addEditTag(); }
+});
+
+/* Quotes */
+function newQuote() {
+  const idx = Math.floor(Math.random()*QUOTES.length);
+  document.getElementById('home-quote').textContent = '"'+QUOTES[idx]+'"';
+}
+
+/* Markdown mini renderer */
+function renderMD(text) {
+  if(!text) return '';
+  let html = text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/^### (.+)$/gm,'<h3 style="font-size:14px;margin:0.5em 0;">$1</h3>')
+    .replace(/^## (.+)$/gm,'<h2 style="font-size:15px;margin:0.5em 0;">$1</h2>')
+    .replace(/^# (.+)$/gm,'<h1 style="font-size:16px;margin:0.5em 0;">$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/~~(.+?)~~/g,'<del>$1</del>')
+    .replace(/`([^`]+)`/g,'<code style="background:var(--inset-bg);font-size:0.9em;padding:1px 5px;border-radius:4px;">$1</code>')
+    .replace(/^- (.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g,'<ul style="margin:0.3em 0;padding-left:1.2em;">$&</ul>')
+    .replace(/\n\n/g,'</p><p>')
+    .replace(/\n/g,'<br>');
+  return '<p style="margin:0.2em 0;">'+html+'</p>';
+}
+
+/* Home */
+function renderHome() {
+  const d = new Date();
+  const dayIdx = (d.getDay()+6)%7;
+  const names = ['hai','ba','tư','năm','sáu','bảy','chủ nhật'];
+  const dateStr = 'Thứ '+names[dayIdx]+', '+d.getDate()+' thg '+(d.getMonth()+1);
+  document.getElementById('home-date').textContent = dateStr;
+  document.getElementById('home-greeting').textContent = greetingByHour()+', Bình';
+  if(!document.getElementById('home-quote').textContent) newQuote();
+
+  const entries = LS.entries().filter(e=>e.date===todayKey()).sort((a,b)=>b.ts-a.ts);
+  const timelineEl = document.getElementById('home-timeline');
+  timelineEl.innerHTML = '';
+  if(!entries.length) {
+    timelineEl.innerHTML = '<div class="empty-state">Chưa có khoảnh khắc nào hôm nay.<br>Ghi lại điều đầu tiên nhé.</div>';
+  } else {
+    entries.forEach((e,i)=>{
+      const mood = moodMap[e.mood];
+      const tags = (e.tags||[]).map(t=>'<span class="timeline-tag">'+t+'</span>').join('');
+      const item = document.createElement('div');
+      item.className = 'timeline-item';
+      item.innerHTML = '<div class="timeline-time-col"><div class="timeline-time">'+fmtTime(e.ts)+'</div>'+(i<entries.length-1?'<div class="timeline-line"></div>':'')+'</div><div class="timeline-icon">'+mood.emoji+'</div><div style="flex:1;min-width:0;"><div class="timeline-text">'+renderMD(e.text||mood.label)+'</div>'+(e.image?'<div style="margin-top:6px;"><img src="'+e.image+'" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px;" /></div>':'')+(tags?'<div class="timeline-tags">'+tags+'</div>':'')+'</div><div class="timeline-actions">'+icon('edit')+icon('trash')+'</div>';
+      item.querySelector('.timeline-actions').children[0].addEventListener('click', (ev)=>{ ev.stopPropagation(); openEdit(e.id); });
+      item.querySelector('.timeline-actions').children[1].addEventListener('click', (ev)=>{ ev.stopPropagation(); deleteEntry(e.id); });
+      timelineEl.appendChild(item);
+    });
+  }
+}
+
+/* Journal / Calendar */
+function changeMonth(delta) {
+  calMonth += delta;
+  if(calMonth<0) { calMonth=11; calYear--; }
+  if(calMonth>11) { calMonth=0; calYear++; }
+  renderJournal();
+}
+function dayMoodAvg(dateKey, entries) {
+  const dayEntries = entries.filter(e=>e.date===dateKey);
+  if(!dayEntries.length) return null;
+  const avg = dayEntries.reduce((s,e)=>s+moodMap[e.mood].score,0)/dayEntries.length;
+  let closest = MOODS[0], minDiff = Infinity;
+  MOODS.forEach(m=>{ const d=Math.abs(m.score-avg); if(d<minDiff){minDiff=d;closest=m;} });
+  return closest;
+}
+function renderJournal() {
+  const monthNames = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+  document.getElementById('cal-title').textContent = monthNames[calMonth]+', '+calYear;
+
+  const entries = LS.entries();
+  const firstDay = new Date(calYear, calMonth, 1);
+  const startOffset = (firstDay.getDay()+6)%7;
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const today = todayKey();
+
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  for(let i=0;i<startOffset;i++) { const e=document.createElement('div'); grid.appendChild(e); }
+  for(let day=1; day<=daysInMonth; day++) {
+    const dateKey = calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+    const mood = dayMoodAvg(dateKey, entries);
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell'+(mood?' has-mood':'')+(dateKey===today?' today':'')+(dateKey===selectedDate?' selected':'');
+    cell.innerHTML = mood ? '<div style="position:relative;">'+mood.emoji+'</div>' : '<div>'+day+'</div>';
+    cell.onclick = ()=>{ selectedDate = dateKey; renderJournal(); };
+    grid.appendChild(cell);
+  }
+
+  const dayEntries = entries.filter(e=>e.date===selectedDate).sort((a,b)=>b.ts-a.ts);
+  const dObj = new Date(selectedDate+'T12:00:00');
+  const dayNames = ['Chủ nhật','Thứ hai','Thứ ba','Thứ tư','Thứ năm','Thứ sáu','Thứ bảy'];
+  document.getElementById('journal-day-title').textContent = dayNames[dObj.getDay()]+', '+dObj.getDate()+' tháng '+(dObj.getMonth()+1);
+  document.getElementById('journal-day-sub').textContent = dayEntries.length+' khoảnh khắc';
+
+  const listEl = document.getElementById('journal-list');
+  listEl.innerHTML = '';
+  if(!dayEntries.length) {
+    listEl.innerHTML = '<div class="empty-state">Không có ghi chú nào cho ngày này.</div>';
+  } else {
+    dayEntries.forEach(e=>{
+      const mood = moodMap[e.mood];
+      const tags = (e.tags||[]).map(t=>'<span class="timeline-tag">'+t+'</span>').join('');
+      const row = document.createElement('div');
+      row.className = 'timeline-item';
+      row.innerHTML = '<div class="timeline-icon">'+mood.emoji+'</div><div style="flex:1;min-width:0;"><div style="font-size:10px;color:#c3bdd4;font-weight:600;">'+fmtTime(e.ts)+'</div><div class="timeline-text" style="padding-top:0;">'+renderMD(e.text||mood.label)+'</div>'+(e.image?'<div style="margin-top:6px;"><img src="'+e.image+'" style="width:100%;max-height:160px;object-fit:cover;border-radius:12px;" /></div>':'')+(tags?'<div class="timeline-tags">'+tags+'</div>':'')+'</div><div class="timeline-actions">'+icon('edit')+icon('trash')+'</div>';
+      row.querySelector('.timeline-actions').children[0].addEventListener('click', (ev)=>{ ev.stopPropagation(); openEdit(e.id); });
+      row.querySelector('.timeline-actions').children[1].addEventListener('click', (ev)=>{ ev.stopPropagation(); deleteEntry(e.id); });
+      listEl.appendChild(row);
+    });
+  }
+}
+
+/* Stats */
+let moodChartInstance = null;
+function setStatsRange(range) {
+  statsRange = range;
+  ['week','month','year'].forEach(r=>{
+    document.getElementById('tab-'+r).classList.toggle('active', r===range);
+  });
+  renderStats();
+}
+function getRangeDates(range) {
+  const n = range==='week'?7:(range==='month'?30:365);
+  const dates = [];
+  for(let i=n-1;i>=0;i--) {
+    const d = new Date(); d.setDate(d.getDate()-i);
+    dates.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'));
+  }
+  return dates;
+}
+function calcStreak(entries) {
+  const dateSet = new Set(entries.map(e=>e.date));
+  let streak = 0, d = new Date();
+  while(true) {
+    const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(dateSet.has(key)) { streak++; d.setDate(d.getDate()-1); } else break;
+  }
+  return streak;
+}
+function renderStats() {
+  const entries = LS.entries();
+  const dates = getRangeDates(statsRange);
+  const rangeEntries = entries.filter(e=>dates.includes(e.date));
+
+  if(rangeEntries.length>0) {
+    const avgScore = rangeEntries.reduce((s,e)=>s+moodMap[e.mood].score,0)/rangeEntries.length;
+    let closest = MOODS[0], minDiff = Infinity;
+    MOODS.forEach(m=>{ const d=Math.abs(m.score-avgScore); if(d<minDiff){minDiff=d;closest=m;} });
+    document.getElementById('stat-avg-mood').textContent = closest.emoji+' '+closest.label;
+  } else {
+    document.getElementById('stat-avg-mood').textContent = '— Chưa có dữ liệu';
+  }
+  document.getElementById('stat-streak').textContent = calcStreak(entries)+' ngày';
+
+  const chartDates = statsRange==='year' ? dates.filter((_,i)=>i%30===0) : dates;
+  const labels = chartDates.map(dk=>{
+    const dd=new Date(dk+'T12:00:00');
+    return statsRange==='week' ? ['CN','T2','T3','T4','T5','T6','T7'][dd.getDay()] : dd.getDate()+'/'+(dd.getMonth()+1);
+  });
+  const dataPoints = chartDates.map(dk=>{
+    const dayEntries = entries.filter(e=>e.date===dk);
+    if(!dayEntries.length) return null;
+    return dayEntries.reduce((s,e)=>s+moodMap[e.mood].score,0)/dayEntries.length;
+  });
+
+  const ctx = document.getElementById('moodChart');
+  if(moodChartInstance) moodChartInstance.destroy();
+  moodChartInstance = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels,
+      datasets:[{
+        data: dataPoints,
+        borderColor:'#7C3AED',
+        backgroundColor:'rgba(124,58,237,0.15)',
+        fill:true, tension:0.4, spanGaps:true,
+        pointRadius:3, pointBackgroundColor:'#7C3AED', pointBorderColor:'#F4F1FA', pointBorderWidth:2,
+        borderWidth:2.5
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        y:{min:0,max:6,display:false},
+        x:{grid:{display:false}, ticks:{font:{size:9,weight:600},color:'#635F69',maxRotation:0,autoSkip:true,maxTicksLimit:7}}
+      }
+    }
+  });
+
+  const barsEl = document.getElementById('activity-bars');
+  barsEl.innerHTML = '';
+  if(!rangeEntries.length) {
+    barsEl.innerHTML = '<div class="empty-state">Chưa có dữ liệu.</div>';
+  } else {
+    const moodCounts = {};
+    rangeEntries.forEach(e=>{ moodCounts[e.mood]=(moodCounts[e.mood]||0)+1; });
+    const sorted = Object.entries(moodCounts).sort((a,b)=>b[1]-a[1]).slice(0,3);
+    const maxCount = sorted.length?sorted[0][1]:1;
+    sorted.forEach(([moodId,count])=>{
+      const mood = moodMap[moodId];
+      barsEl.innerHTML += '<div class="bar-row"><div class="bar-row-top"><span>'+mood.emoji+' '+mood.label+'</span><span>'+count+' lần</span></div><div class="bar-track"><div class="bar-fill" style="width:'+Math.round(count/maxCount*100)+'%;"></div></div></div>';
+    });
+  }
+
+  const distEl = document.getElementById('mood-distribution');
+  distEl.innerHTML = '';
+  MOODS.forEach(m=>{
+    const count = rangeEntries.filter(e=>e.mood===m.id).length;
+    if(count>0) distEl.innerHTML += '<span class="mood-pill">'+m.emoji+' '+count+'</span>';
+  });
+  if(!distEl.innerHTML) distEl.innerHTML = '<div class="empty-state">Chưa có cảm xúc nào được ghi.</div>';
+}
+
+/* Settings */
+let lastReminderCheck = '';
+function toggleSetting(key) {
+  const s = LS.settings();
+  if(key==='darkmode') {
+    s.darkmode = !s.darkmode;
+    document.getElementById('toggle-dark').className = 'toggle '+(s.darkmode?'on':'off');
+    document.getElementById('phone').dataset.theme = s.darkmode?'dark':'';
+    LS.saveSettings(s);
+  } else if(key==='reminder') {
+    s.reminder = !s.reminder;
+    document.getElementById('toggle-reminder').className = 'toggle '+(s.reminder?'on':'off');
+    LS.saveSettings(s);
+    if(s.reminder && Notification.permission==='default') Notification.requestPermission();
+    toast(s.reminder?'Đã bật nhắc nhở ☀️':'Đã tắt nhắc nhở.');
+  } else if(key==='lock') {
+    if(!s.lock) {
+      const pwd = prompt('Đặt mật mã 4-6 số:');
+      if(!pwd || pwd.length<4) { toast('Mật mã phải có ít nhất 4 số.', 'error'); return; }
+      if(pwd !== prompt('Nhập lại mật mã:')) { toast('Mật mã không khớp.', 'error'); return; }
+      s.lockPass = pwd;
+      s.lock = true;
+      toast('Đã bật khóa ứng dụng 🔒');
+    } else {
+      const pwd = prompt('Nhập mật mã hiện tại để tắt:');
+      if(pwd !== s.lockPass) { toast('Sai mật mã.', 'error'); return; }
+      s.lock = false;
+      s.lockPass = '';
+      toast('Đã tắt khóa ứng dụng.');
+    }
+    document.getElementById('toggle-lock').className = 'toggle '+(s.lock?'on':'off');
+    LS.saveSettings(s);
+    checkLock();
+  }
+}
+
+/* Reminder checker */
+setInterval(()=>{
+  const s = LS.settings();
+  if(!s.reminder) return;
+  if(Notification.permission!=='granted') return;
+  const now = new Date();
+  const key = String(now.getHours())+':'+String(now.getMinutes());
+  if(key==='21:0' && lastReminderCheck!==now.toDateString()) {
+    lastReminderCheck = now.toDateString();
+    const hasEntry = LS.entries().some(e=>e.date===todayKey());
+    if(!hasEntry) {
+      new Notification('📔 Nhật Ký Cảm Xúc', { body: 'Hôm nay bạn thế nào? Ghi lại một khoảnh khắc nhé!' });
+    }
+  }
+}, 60000);
+
+/* Export / Import */
+function exportData() {
+  const entries = LS.entries();
+  if(!entries.length) { toast('Chưa có dữ liệu để xuất.', 'error'); return; }
+  const blob = new Blob([JSON.stringify(entries,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'nhat-ky-cam-xuc-'+todayKey()+'.json'; a.click();
+  URL.revokeObjectURL(url);
+  toast('Đã xuất '+entries.length+' khoảnh khắc 📄');
+}
+document.getElementById('import-file').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    try {
+      const data = JSON.parse(ev.target.result);
+      if(!Array.isArray(data)) throw Error();
+      const existing = LS.entries();
+      const existingIds = new Set(existing.map(x=>x.id));
+      const newOnes = data.filter(x=>x.id && !existingIds.has(x.id));
+      if(!newOnes.length) { toast('Không có mục mới để nhập.'); return; }
+      existing.push(...newOnes);
+      existing.sort((a,b)=>b.ts-a.ts);
+      LS.saveEntries(existing);
+      toast('Đã nhập '+newOnes.length+' khoảnh khắc 📥');
+      renderHome(); renderJournal(); renderStats(); updateSettingsCount();
+    } catch(err) {
+      toast('File không hợp lệ. Chọn file JSON đã xuất.', 'error');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value='';
+});
+
+/* Clear all */
+function clearAllData() {
+  if(!confirm('Xóa toàn bộ dữ liệu nhật ký? Hành động này không thể hoàn tác.')) return;
+  if(!confirm('Bạn có chắc chắn? Toàn bộ '+(LS.entries().length)+' khoảnh khắc sẽ biến mất.')) return;
+  localStorage.removeItem('mood_entries');
+  renderHome(); renderJournal(); renderStats(); updateSettingsCount();
+  toast('Đã xóa toàn bộ dữ liệu.');
+}
+function updateSettingsCount() {
+  document.getElementById('settings-count').textContent = 'Đã ghi '+LS.entries().length+' khoảnh khắc';
+}
+
+/* Screen routing */
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  ['home','journal','stats','settings'].forEach(n=>{
+    const icon = document.getElementById('nav-icon-'+n);
+    const text = document.getElementById('nav-text-'+n);
+    if(icon) icon.classList.toggle('active', n===name);
+    if(text) text.classList.toggle('active', n===name);
+  });
+  if(name==='home') renderHome();
+  if(name==='journal') renderJournal();
+  if(name==='stats') renderStats();
+  if(name==='settings') updateSettingsCount();
+}
+
+/* ================= LOCKET-STYLE CAPTURE OVERLAY ================= */
+let captureMode = 'photo';
+let capturePhotoData = null;
+let captureText = '';
+let captureMood = null;
+let captureStream = null;
+let facingMode = 'environment';
+let flashOn = false;
+let _captureTimeInt = null;
+
+const CAPTURE_PROMPTS = [
+  "Bình, how's your day going?",
+  "What made you smile today?",
+  "Write it down, don't let it fade...",
+  "A thought, a feeling, anything.",
+  "What's on your mind, Bình?"
+];
+let capturePromptIdx = 0;
+
+function captureSelectMood(id) {
+  captureMood = id;
+  document.querySelectorAll('#capture-mood-grid .mood-item, #capture-mood-grid-text .mood-item').forEach((item, idx) => {
+    const circle = item.querySelector('.mood-circle');
+    const label = item.querySelector('.mood-label');
+    const isSel = MOODS[idx] && MOODS[idx].id === id;
+    if (circle) circle.classList.toggle('selected', isSel);
+    if (label) label.classList.toggle('selected', isSel);
+  });
+}
+
+function renderCaptureMoodGrids() {
+  ['capture-mood-grid','capture-mood-grid-text'].forEach(gridId => {
+    const g = document.getElementById(gridId);
+    if (!g) return;
+    g.innerHTML = '';
+    MOODS.forEach(m => {
+      const item = document.createElement('div');
+      item.className = 'mood-item';
+      item.onclick = () => captureSelectMood(m.id);
+      item.innerHTML = '<div class="mood-circle'+(captureMood===m.id?' selected':'')+'">'+m.emoji+'</div><div class="mood-label'+(captureMood===m.id?' selected':'')+'">'+m.label+'</div>';
+      g.appendChild(item);
+    });
+  });
+}
+
+function openCapture() {
+  captureMode = 'photo';
+  capturePhotoData = null;
+  captureText = '';
+  captureMood = null;
+
+  document.getElementById('camera-video').style.display = 'none';
+  document.getElementById('camera-placeholder').style.display = 'flex';
+  document.getElementById('captured-preview').style.display = 'none';
+  document.getElementById('captured-preview').src = '';
+  document.getElementById('capture-text-layer').classList.remove('show');
+  document.getElementById('capture-mood-step').classList.remove('show');
+  document.getElementById('capture-mood-step-text').classList.remove('show');
+  document.getElementById('locket-shutter').style.display = 'flex';
+  document.getElementById('locket-send').style.display = 'none';
+  document.getElementById('flip-btn').style.display = 'flex';
+  document.getElementById('capture-textarea').value = '';
+  document.getElementById('text-counter').textContent = '0/100';
+
+  updateCaptureTime();
+  if (_captureTimeInt) clearInterval(_captureTimeInt);
+  _captureTimeInt = setInterval(updateCaptureTime, 10000);
+
+  capturePromptIdx = Math.floor(Math.random() * CAPTURE_PROMPTS.length);
+  document.getElementById('capture-textarea').placeholder = CAPTURE_PROMPTS[capturePromptIdx];
+
+  renderCaptureMoodGrids();
+  document.getElementById('toggle-photo').classList.add('active');
+  document.getElementById('toggle-text').classList.remove('active');
+  flashOn = false;
+  document.getElementById('capture-flash-toggle').classList.remove('active-flash');
+  document.getElementById('capture-overlay').classList.add('show');
+  startCamera();
+}
+
+function closeCapture() {
+  if (_captureTimeInt) { clearInterval(_captureTimeInt); _captureTimeInt = null; }
+  stopCamera();
+  document.getElementById('capture-overlay').classList.remove('show');
+  document.getElementById('capture-mood-step').classList.remove('show');
+  document.getElementById('capture-mood-step-text').classList.remove('show');
+}
+
+function updateCaptureTime() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('capture-time').textContent = h+':'+m;
+  const days = ['CN','T2','T3','T4','T5','T6','T7'];
+  document.getElementById('capture-date').textContent = days[now.getDay()]+', '+now.getDate()+' thg '+(now.getMonth()+1);
+}
+
+async function startCamera() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+  try {
+    if (captureStream) stopCamera();
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode, width: { ideal: 1080 }, height: { ideal: 1080 } },
+      audio: false
+    });
+    captureStream = stream;
+    const video = document.getElementById('camera-video');
+    video.srcObject = stream;
+    video.style.display = 'block';
+    document.getElementById('camera-placeholder').style.display = 'none';
+    await video.play();
+  } catch (err) {
+    console.warn('Camera not available:', err.message);
+  }
+}
+
+function stopCamera() {
+  if (captureStream) { captureStream.getTracks().forEach(t => t.stop()); captureStream = null; }
+  const video = document.getElementById('camera-video');
+  video.srcObject = null;
+  video.style.display = 'none';
+}
+
+function toggleFlash() { flashOn = !flashOn; document.getElementById('capture-flash-toggle').classList.toggle('active-flash', flashOn); }
+function flipCamera() { if (!captureStream) return; facingMode = facingMode==='environment'?'user':'environment'; startCamera(); }
+function pickPhoto() { document.getElementById('photo-picker').click(); }
+
+function takePhoto() {
+  const video = document.getElementById('camera-video');
+  if (video.style.display === 'none' || !video.videoWidth) { pickPhoto(); return; }
+  const c = document.createElement('canvas');
+  c.width = video.videoWidth; c.height = video.videoHeight;
+  c.getContext('2d').drawImage(video, 0, 0);
+  showCapturedPhoto(c.toDataURL('image/jpeg', 0.85));
+}
+
+function showCapturedPhoto(dataUrl) {
+  capturePhotoData = dataUrl;
+  document.getElementById('camera-video').style.display = 'none';
+  document.getElementById('camera-placeholder').style.display = 'none';
+  document.getElementById('captured-preview').src = dataUrl;
+  document.getElementById('captured-preview').style.display = 'block';
+  document.getElementById('locket-shutter').style.display = 'none';
+  document.getElementById('locket-send').style.display = 'none';
+  document.getElementById('flip-btn').style.display = 'none';
+  document.getElementById('mood-step-img').src = dataUrl;
+  document.getElementById('mood-step-img').style.display = 'block';
+  setTimeout(() => document.getElementById('capture-mood-step').classList.add('show'), 200);
+}
+
+document.getElementById('photo-picker').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => showCapturedPhoto(ev.target.result);
+  reader.readAsDataURL(file);
+  e.target.value = '';
+});
+
+function setCaptureMode(mode) {
+  captureMode = mode;
+  document.getElementById('toggle-photo').classList.toggle('active', mode==='photo');
+  document.getElementById('toggle-text').classList.toggle('active', mode==='text');
+  if (mode==='photo') {
+    document.getElementById('capture-text-layer').classList.remove('show');
+    document.getElementById('locket-shutter').style.display = 'flex';
+    document.getElementById('locket-send').style.display = 'none';
+    document.getElementById('flip-btn').style.display = 'flex';
+    document.getElementById('captured-preview').style.display = 'none';
+    document.getElementById('camera-video').style.display = 'none';
+    document.getElementById('camera-placeholder').style.display = 'flex';
+    startCamera();
+  } else {
+    stopCamera();
+    document.getElementById('capture-text-layer').classList.add('show');
+    document.getElementById('locket-shutter').style.display = 'none';
+    document.getElementById('locket-send').style.display = 'flex';
+    document.getElementById('flip-btn').style.display = 'none';
+    document.getElementById('captured-preview').style.display = 'none';
+    document.getElementById('capture-textarea').placeholder = CAPTURE_PROMPTS[capturePromptIdx];
+    document.getElementById('capture-textarea').focus();
+  }
+}
+
+document.getElementById('capture-textarea').addEventListener('input', function() {
+  if (this.value.length > 100) this.value = this.value.slice(0,100);
+  document.getElementById('text-counter').textContent = this.value.length+'/100';
+  document.getElementById('text-counter').classList.toggle('over', this.value.length >= 95);
+});
+
+function sendText() {
+  const text = document.getElementById('capture-textarea').value.trim();
+  if (!text) { toast('Hãy viết gì đó trước khi gửi nhé.', 'error'); return; }
+  captureText = text;
+  document.getElementById('mood-step-text-preview2').textContent = '"' + text.slice(0, 30) + (text.length > 30 ? '…"' : '"');
+  document.getElementById('capture-mood-step-text').classList.add('show');
+}
+
+function doSave(extra) {
+  if (!captureMood) { toast('Hãy chọn một cảm xúc.', 'error'); return; }
+  const entries = LS.entries();
+  entries.push({
+    id: Date.now(), ts: Date.now(), date: todayKey(),
+    mood: captureMood, tags: [], ...extra
+  });
+  LS.saveEntries(entries);
+  closeCapture();
+  if (document.getElementById('screen-home').classList.contains('active')) renderHome();
+  toast(extra.image ? 'Đã lưu khoảnh khắc 📸' : 'Đã lưu khoảnh khắc ✨');
+}
+
+function confirmCaptureSave() {
+  if (!capturePhotoData) { toast('Chưa có ảnh.', 'error'); return; }
+  doSave({ image: capturePhotoData });
+}
+
+function confirmTextSave() {
+  const text = document.getElementById('capture-textarea').value.trim();
+  if (!text) { toast('Hãy viết gì đó.', 'error'); return; }
+  doSave({ text });
+}
+
+function backFromMoodStep() {
+  document.getElementById('capture-mood-step').classList.remove('show');
+  captureMood = null;
+  renderCaptureMoodGrids();
+  document.getElementById('locket-shutter').style.display = 'flex';
+  document.getElementById('flip-btn').style.display = 'flex';
+  document.getElementById('captured-preview').style.display = 'none';
+  document.getElementById('mood-step-img').style.display = 'none';
+  startCamera();
+}
+
+function backFromTextMoodStep() {
+  document.getElementById('capture-mood-step-text').classList.remove('show');
+  captureMood = null;
+  renderCaptureMoodGrids();
+}
+
+/* Init */
+const initSettings = LS.initSettings();
+document.getElementById('toggle-dark').className = 'toggle '+(initSettings.darkmode?'on':'off');
+document.getElementById('toggle-reminder').className = 'toggle '+(initSettings.reminder?'on':'off');
+document.getElementById('toggle-lock').className = 'toggle '+(initSettings.lock?'on':'off');
+if(initSettings.darkmode) document.getElementById('phone').dataset.theme = 'dark';
+if(initSettings.reminder && Notification.permission==='default') Notification.requestPermission();
+renderHome();
+updateSettingsCount();
+checkLock();
+showScreen('home');
+</script>
+
+</body>
+</html>

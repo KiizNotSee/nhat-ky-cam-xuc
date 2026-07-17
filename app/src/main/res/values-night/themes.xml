@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.NhatKyCamXuc" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/accent_light</item>
+        <item name="colorPrimaryVariant">@color/accent</item>
+        <item name="colorOnPrimary">@color/black</item>
+        <item name="colorSecondary">@color/accent_light</item>
+        <item name="colorOnSecondary">@color/black</item>
+        <item name="android:windowBackground">@color/canvas_dark</item>
+        <item name="android:statusBarColor">@color/status_bar_dark</item>
+        <item name="android:navigationBarColor">@color/nav_bar_dark</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowTranslucentStatus">false</item>
+        <item name="android:windowTranslucentNavigation">false</item>
+    </style>
+</resources>
